@@ -19,26 +19,6 @@ public class UserController {
     private final Map<String, Long> emailToIdMap = new HashMap<>();
 
     @GetMapping
-    public String getUsers() {
-        return "Список пользователей Котограма";
-    }
-
-    @GetMapping("/{userId}")
-    public String getUserById(@PathVariable int userId) {
-        return "Информация о пользователе с ID: " + userId;
-    }
-
-    @GetMapping("/{userId}/posts")
-    public String getUserPosts(@PathVariable int userId) {
-        return "Посты пользователя с ID: " + userId;
-    }
-
-    @PostMapping
-    public String createUser(@RequestBody String userData) {
-        return "Пользователь создан: " + userData;
-    }
-
-    @GetMapping
     public Collection<User> findAll() {
         return users.values();
     }

@@ -1,32 +1,105 @@
 package ru.yandex.practicum.catsgram.controller;
 
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.catsgram.exception.ConditionsNotMetException;
+import ru.yandex.practicum.catsgram.exception.DuplicatedDataException;
+import ru.yandex.practicum.catsgram.exception.NotFoundException;
+import ru.yandex.practicum.catsgram.model.User;
+
+import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/users") // Все эндпоинты будут начинаться с /api/users
+@RequestMapping("/users")
 public class UserController {
 
-    // GET /api/users - получить информацию о пользователях
+    private final Map<Long, User> users = new HashMap<>();
+    private final Map<String, Long> emailToIdMap = new HashMap<>();
+
     @GetMapping
     public String getUsers() {
         return "Список пользователей Котограма";
     }
 
-    // GET /api/users/{userId} - получить пользователя по ID
     @GetMapping("/{userId}")
     public String getUserById(@PathVariable int userId) {
         return "Информация о пользователе с ID: " + userId;
     }
 
-    // GET /api/users/{userId}/posts - получить посты пользователя
     @GetMapping("/{userId}/posts")
     public String getUserPosts(@PathVariable int userId) {
         return "Посты пользователя с ID: " + userId;
     }
 
-    // POST /api/users - создать нового пользователя
     @PostMapping
     public String createUser(@RequestBody String userData) {
         return "Пользователь создан: " + userData;
+    }
+
+    @GetMapping
+    public Collection<User> findAll() {
+        return users.values();
+    }
+
+    @PostMapping
+    public User create(@RequestBody User user) {
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new ConditionsNotMetException("Имейл должен быть указан");
+        }
+
+        if (emailToIdMap.containsKey(user.getEmail())) {
+            throw new DuplicatedDataException("Этот имейл уже используется");
+        }
+
+        user.setId(getNextId());
+        user.setRegistrationDate(Instant.now());
+
+        users.put(user.getId(), user);
+        emailToIdMap.put(user.getEmail(), user.getId());
+
+        return user;
+    }
+
+    @PutMapping
+    public User update(@RequestBody User newUser) {
+        if (newUser.getId() == null) {
+            throw new ConditionsNotMetException("Id должен быть указан");
+        }
+
+        User existingUser = users.get(newUser.getId());
+        if (existingUser == null) {
+            throw new NotFoundException("Пользователь с id = " + newUser.getId() + " не найден");
+        }
+
+        if (newUser.getEmail() != null && !newUser.getEmail().equals(existingUser.getEmail())) {
+            if (emailToIdMap.containsKey(newUser.getEmail())) {
+                throw new DuplicatedDataException("Этот имейл уже используется");
+            }
+
+            emailToIdMap.remove(existingUser.getEmail());
+            emailToIdMap.put(newUser.getEmail(), newUser.getId());
+            existingUser.setEmail(newUser.getEmail());
+        }
+
+        if (newUser.getUsername() != null) {
+            existingUser.setUsername(newUser.getUsername());
+        }
+
+        if (newUser.getPassword() != null) {
+            existingUser.setPassword(newUser.getPassword());
+        }
+
+        return existingUser;
+    }
+
+    private long getNextId() {
+        long currentMaxId = users.keySet()
+                .stream()
+                .mapToLong(id -> id)
+                .max()
+                .orElse(0);
+        return ++currentMaxId;
     }
 }

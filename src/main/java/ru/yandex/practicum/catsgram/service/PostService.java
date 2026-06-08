@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.catsgram.exception.ConditionsNotMetException;
 import ru.yandex.practicum.catsgram.exception.NotFoundException;
 import ru.yandex.practicum.catsgram.model.Post;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -14,8 +16,16 @@ import java.util.Map;
 public class PostService {
     private final Map<Long, Post> posts = new HashMap<>();
 
-    public Collection<Post> findAll() {
-        return posts.values();
+    public Collection<Post> findAll(int from, int size, String sort) {
+        Comparator<Post> comparator = Comparator.comparing(Post::getPostDate);
+        if (sort.equalsIgnoreCase("desc")) {
+            comparator = comparator.reversed();
+        }
+        return posts.values().stream()
+                .sorted(comparator)
+                .skip(from)
+                .limit(size)
+                .collect(Collectors.toList());
     }
 
     public Post findById(Long id) {

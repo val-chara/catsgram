@@ -18,6 +18,13 @@ public class PostService {
         return posts.values();
     }
 
+    public Post findById(Long id) {
+        if (!posts.containsKey(id)) {
+            throw new NotFoundException("Пост с id = " + id + " не найден");
+        }
+        return posts.get(id);
+    }
+
     public Post create(Post post) {
         if (post.getDescription() == null || post.getDescription().isBlank()) {
             throw new ConditionsNotMetException("Описание не может быть пустым");
